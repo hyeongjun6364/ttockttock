@@ -1,5 +1,5 @@
 import { ROUTES } from '@/common/constants/routes';
-import Button from '@/common/ui/button';
+import { Button } from '@ttockttock/ui';
 import Header from '@/common/ui/header';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -49,9 +49,15 @@ function Desktop<T extends { id: string; name: string; clubType: string }>({
           onClick={handleNavigate}
           onKeyDown={handleKeyDown}
           placeholder="동아리 이름을 검색하세요."
+          aria-label="동아리 이름을 검색하세요."
         />
         {userName ? (
           <>
+            <Link href={ROUTES.ADMIN_LOGIN}>
+              <Button className={S.ButtonStyle2} variant="primary">
+                동아리 로그인
+              </Button>
+            </Link>
             <Link href={ROUTES.APPLIED}>
               <Button className={S.ButtonStyle2} variant="primary">
                 내 지원내역
@@ -80,6 +86,11 @@ function Desktop<T extends { id: string; name: string; clubType: string }>({
             <Link href={ROUTES.SIGNUP}>
               <Button className={S.ButtonStyle} variant="secondary">
                 회원가입
+              </Button>
+            </Link>
+            <Link href={ROUTES.ADMIN_LOGIN}>
+              <Button className={S.ButtonStyle} variant="secondary">
+                동아리 로그인
               </Button>
             </Link>
           </>

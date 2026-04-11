@@ -59,6 +59,20 @@ export const submitButtonMobile = style({
   },
 });
 
+export const saveButton = style({
+  display: 'none',
+  '@media': {
+    [`screen and (max-width: ${BREAKPOINTS.desktop}px)`]: {
+      display: 'block',
+      width: '100%',
+      borderRadius: '6px',
+      padding: '14px 0',
+      fontSize: vars.fonts.m_body1,
+      fontWeight: '600',
+    },
+  },
+});
+
 export const BoxFlex = style({
   display: 'flex',
   flexDirection: 'column',
@@ -227,6 +241,8 @@ export const FormContentSubTitle = style({
   fontSize: vars.fonts.m_body1,
   fontWeight: '500',
   color: '#55637D',
+  overflowWrap: 'break-word',
+  wordBreak: 'break-word',
 
   '@media': {
     [`screen and (max-width: ${BREAKPOINTS.desktop}px)`]: {

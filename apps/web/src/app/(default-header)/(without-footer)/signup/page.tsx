@@ -10,12 +10,15 @@ import { signupSchema, SignupForm } from '@/components/signup/schema';
 import SignupComplete from '@/components/signup/SignupComplete';
 import { postEmail, postCode, postSignup } from '@/components/signup/api';
 import { CustomHttpError } from '@/common/apis/apiClient';
+import { useModal } from '@/hooks/useModal';
+import ConfirmCancelModal from '@/common/components/confirmCancelModal';
+import { trackGAEvent } from '@/lib/ga';
 
 export default function Page() {
   const [isComplete, setIsComplete] = useState(false);
   const [userName, setUserName] = useState('');
   const [isVerified, setIsVerified] = useState(false);
-
+  const { isOpen, handleModalClose, handleModalOpen } = useModal();
   const {
     register,
     handleSubmit,
@@ -27,24 +30,26 @@ export default function Page() {
   });
 
   const handleSendEmail = async () => {
+    const studentId = getValues('studentId');
+    trackGAEvent('email_request');
+    // studentId가 9자리가 아니면 요청하지 않음
+    if (studentId.length !== 9) {
+      alert('학번은 9자리여야 합니다.');
+      return;
+    }
+
     try {
-      const studentId = getValues('studentId');
-
-      // studentId가 9자리가 아니면 요청하지 않음
-      if (studentId.length !== 9) {
-        alert('학번은 9자리여야 합니다.');
-        return;
-      }
-
       const email = `${studentId}@sangmyung.kr`;
-
       const response = await postEmail({ email });
       if (response.success) {
-        alert(response.message);
+        trackGAEvent('email_success');
+        handleModalOpen();
       } else {
+        trackGAEvent('email_fail');
         alert(response.message);
       }
     } catch (error) {
+      trackGAEvent('email_error');
       console.error('이메일 전송 중 오류 발생:', error);
       alert('이메일 전송 중 오류가 발생했습니다. 다시 시도해주세요.');
     }
@@ -55,20 +60,38 @@ export default function Page() {
       const studentId = getValues('studentId');
       const email = `${studentId}@sangmyung.kr`;
       const code = getValues('code');
+      trackGAEvent('verify_code_attempt', {
+        signup_step: 'email_verification',
+        has_student_id: Boolean(studentId),
+        has_code: Boolean(code),
+      });
       const response = await postCode({ email, code });
       if (response.success) {
+        trackGAEvent('verify_code_success', {
+          signup_step: 'email_verification',
+        });
         alert(response.message);
         setIsVerified(true);
       } else {
+        trackGAEvent('verify_code_fail', {
+          signup_step: 'email_verification',
+        });
         alert(response.message);
       }
     } catch (error) {
+      trackGAEvent('verify_code_error', {
+        signup_step: 'email_verification',
+      });
+
       console.error('인증 코드 확인 중 오류 발생:', error);
       alert('인증 코드 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
     }
   };
 
   const onSubmit = async (data: SignupForm) => {
+    trackGAEvent('signup_submit_attempt', {
+      signup_step: 'final_submit',
+    });
     try {
       const response = await postSignup({
         email: `${data.studentId}@sangmyung.kr`,
@@ -79,10 +102,17 @@ export default function Page() {
         termsAgreed: data.agree,
       });
       if (response.success) {
+        trackGAEvent('sign_up', {
+          method: 'school_email',
+        });
+
         setUserName(data.name);
         setIsComplete(true);
       }
     } catch (error: unknown) {
+      trackGAEvent('signup_submit_fail', {
+        signup_step: 'final_submit',
+      });
       if (error instanceof CustomHttpError && error.status === 400) {
         alert('이미 존재하는 사용자입니다');
       } else {
@@ -96,129 +126,157 @@ export default function Page() {
   }
 
   return (
-    <div className={S.Container}>
-      <form className={S.BoxContainer} onSubmit={handleSubmit(onSubmit)}>
-        <div className={S.TitleText}>회원가입</div>
+    <>
+      <div className={S.Container}>
+        <form className={S.BoxContainer} onSubmit={handleSubmit(onSubmit)}>
+          <div className={S.TitleText}>회원가입</div>
 
-        {/* 이메일 인증 */}
-        <div className={S.LabelBoxContainer} style={{ gap: '112px' }}>
-          <div className={S.LabelText}>이메일 인증</div>
-          <div className={S.LabelDetailBox}>
-            <div className={S.FlexBox}>
-              <div className={S.LabelDetailText}>이메일</div>
-              <div className={S.FlexBox2}>
-                <div className={S.EmailBox}>
+          {/* 이메일 인증 */}
+          <div className={S.LabelBoxContainer} style={{ gap: '112px' }}>
+            <div className={S.LabelText}>이메일 인증</div>
+            <div className={S.LabelDetailBox}>
+              <div className={S.FlexBox}>
+                <label htmlFor="studentId" className={S.LabelDetailText}>
+                  이메일
+                </label>
+                <div className={S.FlexBox2}>
+                  <div className={S.EmailBox}>
+                    <input
+                      className={S.Input}
+                      {...register('studentId')}
+                      placeholder="학번을 입력하세요"
+                      id="studentId"
+                    />
+                    <div className={S.EmailText}>@sangmyung.kr</div>
+                  </div>
+
+                  <Button
+                    variant="secondary"
+                    className={S.Button}
+                    type="button"
+                    onClick={handleSendEmail}
+                  >
+                    인증코드 전송
+                  </Button>
+                </div>
+                {errors.studentId && <p className={S.ErrorText}>{errors.studentId.message}</p>}
+              </div>
+              <div className={S.FlexBox}>
+                <label htmlFor="code" className={S.LabelDetailText}>
+                  인증코드
+                </label>
+                <div className={S.FlexBox2}>
                   <input
                     className={S.Input}
-                    {...register('studentId')}
-                    placeholder="학번을 입력하세요"
+                    {...register('code')}
+                    placeholder="인증코드를 입력하세요"
+                    id="code"
                   />
-                  <div className={S.EmailText}>@sangmyung.kr</div>
+                  <Button
+                    variant="secondary"
+                    className={S.Button}
+                    type="button"
+                    onClick={handleSendCode}
+                  >
+                    인증코드 확인
+                  </Button>
                 </div>
-
-                <Button
-                  variant="secondary"
-                  className={S.Button}
-                  type="button"
-                  onClick={handleSendEmail}
-                >
-                  인증코드 전송
-                </Button>
+                {errors.code && <p className={S.ErrorText}>{errors.code.message}</p>}
               </div>
-              {errors.studentId && <p className={S.ErrorText}>{errors.studentId.message}</p>}
-            </div>
-            <div className={S.FlexBox}>
-              <div className={S.LabelDetailText}>인증코드</div>
-              <div className={S.FlexBox2}>
-                <input
-                  className={S.Input}
-                  {...register('code')}
-                  placeholder="인증코드를 입력하세요"
-                />
-                <Button
-                  variant="secondary"
-                  className={S.Button}
-                  type="button"
-                  onClick={handleSendCode}
-                >
-                  인증코드 확인
-                </Button>
-              </div>
-              {errors.code && <p className={S.ErrorText}>{errors.code.message}</p>}
             </div>
           </div>
-        </div>
 
-        {/* 비밀번호 */}
-        <div className={S.LabelBoxContainer} style={{ gap: '134px' }}>
-          <div className={S.LabelText}>비밀번호</div>
-          <div className={S.LabelDetailBox}>
-            <div className={S.FlexBox}>
-              <div className={S.LabelDetailText}>비밀번호</div>
-              <div className={S.FlexBox2}>
-                <input
-                  className={S.Input}
-                  type="password"
-                  {...register('password')}
-                  placeholder="비밀번호를 입력하세요"
-                  disabled={!isVerified}
-                />
+          {/* 비밀번호 */}
+          <div className={S.LabelBoxContainer} style={{ gap: '134px' }}>
+            <div className={S.LabelText}>비밀번호</div>
+            <div className={S.LabelDetailBox}>
+              <div className={S.FlexBox}>
+                <label htmlFor="password" className={S.LabelDetailText}>
+                  비밀번호
+                </label>
+                <div className={S.FlexBox2}>
+                  <input
+                    className={S.Input}
+                    type="password"
+                    {...register('password')}
+                    placeholder="비밀번호를 입력하세요"
+                    disabled={!isVerified}
+                    id="password"
+                  />
+                </div>
+                {errors.password && <p className={S.ErrorText}>{errors.password.message}</p>}
               </div>
-              {errors.password && <p className={S.ErrorText}>{errors.password.message}</p>}
-            </div>
-            <div className={S.FlexBox}>
-              <div className={S.LabelDetailText}>비밀번호 재입력</div>
-              <div className={S.FlexBox2}>
-                <input
-                  className={S.Input}
-                  type="password"
-                  {...register('confirmPassword')}
-                  placeholder="비밀번호를 재입력하세요"
-                  disabled={!isVerified}
-                />
+              <div className={S.FlexBox}>
+                <label htmlFor="confirmPassword" className={S.LabelDetailText}>
+                  비밀번호 재입력
+                </label>
+                <div className={S.FlexBox2}>
+                  <input
+                    className={S.Input}
+                    type="password"
+                    {...register('confirmPassword')}
+                    placeholder="비밀번호를 재입력하세요"
+                    disabled={!isVerified}
+                    id="confirmPassword"
+                  />
+                </div>
+                {errors.confirmPassword && (
+                  <p className={S.ErrorText}>{errors.confirmPassword.message}</p>
+                )}
               </div>
-              {errors.confirmPassword && (
-                <p className={S.ErrorText}>{errors.confirmPassword.message}</p>
-              )}
             </div>
           </div>
-        </div>
 
-        {/* 이름 */}
-        <div className={S.LabelBoxContainer} style={{ gap: '166px' }}>
-          <div className={S.LabelText} style={{ alignSelf: 'center' }}>
-            이름
-          </div>
-          <div className={S.FlexBox}>
-            <div className={S.FlexBox2}>
-              <input
-                className={S.Input}
-                placeholder="본인의 이름을 기재해주세요"
-                {...register('name')}
-                disabled={!isVerified}
-              />
-            </div>
-            {errors.name && <p className={S.ErrorText}>{errors.name.message}</p>}
-          </div>
-        </div>
-
-        {/* 약관 */}
-        <div className={S.LabelBoxContainer} style={{ gap: '112px' }}>
-          <div className={S.LabelText}>약관 동의란</div>
-          <div className={S.FlexPolicy}>
-            <div className={S.PolicyBox}>{POLICY}</div>
-            <label className={S.FlexAgree}>
-              <input type="checkbox" {...register('agree')} />
-              <div className={S.AgreeText}>약관 동의란에 대해 동의합니다.</div>
+          {/* 이름 */}
+          <div className={S.LabelBoxContainer} style={{ gap: '166px' }}>
+            <label htmlFor="name" className={S.LabelText} style={{ alignSelf: 'center' }}>
+              이름
             </label>
-            {errors.agree && <p className={S.ErrorText}>{errors.agree.message}</p>}
+            <div className={S.FlexBox}>
+              <div className={S.FlexBox2}>
+                <input
+                  className={S.Input}
+                  placeholder="본인의 이름을 기재해주세요"
+                  {...register('name')}
+                  disabled={!isVerified}
+                  id="name"
+                />
+              </div>
+              {errors.name && <p className={S.ErrorText}>{errors.name.message}</p>}
+            </div>
           </div>
-        </div>
 
-        <Button variant="primary" className={S.SignupButton} type="submit" disabled={!isVerified}>
-          가입하기
-        </Button>
-      </form>
-    </div>
+          {/* 약관 */}
+          <div className={S.LabelBoxContainer} style={{ gap: '112px' }}>
+            <div className={S.LabelText}>약관 동의란</div>
+            <div className={S.FlexPolicy}>
+              <div className={S.PolicyBox}>{POLICY}</div>
+              <label className={S.FlexAgree}>
+                <input type="checkbox" {...register('agree')} />
+                <div className={S.AgreeText}>약관 동의란에 대해 동의합니다.</div>
+              </label>
+              {errors.agree && <p className={S.ErrorText}>{errors.agree.message}</p>}
+            </div>
+          </div>
+
+          <Button variant="primary" className={S.SignupButton} type="submit" disabled={!isVerified}>
+            가입하기
+          </Button>
+        </form>
+      </div>
+      <ConfirmCancelModal
+        isOpen={isOpen}
+        onClose={handleModalClose}
+        onConfirm={handleModalClose}
+        confirmHref="https://cloud.smu.ac.kr/t/smu.ac.kr"
+        title="인증코드 발급"
+        message={
+          <>
+            인증코드가 발급되었습니다.
+            <br /> Outlook으로 이동하시겠습니까?
+          </>
+        }
+      />
+    </>
   );
 }

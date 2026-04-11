@@ -22,14 +22,22 @@ export const Container = style({
 export const LoginText = style({
   fontSize: vars.fonts.title1,
   fontWeight: '600',
+  marginTop: '40px',
 
   '@media': {
     [`screen and (max-width: ${BREAKPOINTS.tablet}px)`]: {
       fontSize: vars.fonts.m_title2,
+      marginTop: '0px',
     },
   },
 });
 
+export const LoginDescription = style({
+  fontSize: vars.fonts.body1,
+  color: vars.colors.surface.on_surf_var,
+  textAlign: 'center',
+  maxWidth: '400px',
+});
 export const BoxContainer = style({
   width: '496px',
   borderRadius: '10px',
@@ -94,6 +102,20 @@ export const AuthFooter = style({
   },
 });
 
+export const AdminSignUp = style({
+  color: vars.colors.surface.outline,
+  fontSize: vars.fonts.body3,
+  cursor: 'pointer',
+  display: 'flex',
+  justifyContent: 'flex-end',
+  marginTop: '12px',
+  '@media': {
+    [`screen and (max-width: ${BREAKPOINTS.tablet}px)`]: {
+      fontSize: vars.fonts.m_body3,
+    },
+  },
+});
+
 export const AuthFooterTextContainer = style({
   display: 'flex',
   gap: '10px',
@@ -130,7 +152,7 @@ export const adminLoginButton = style({
   borderRadius: '6px',
   fontSize: vars.fonts.body1,
   fontWeight: '600',
-  marginTop: '94px',
+  marginTop: '74px',
 
   '@media': {
     [`screen and (max-width: ${BREAKPOINTS.tablet}px)`]: {
@@ -169,4 +191,10 @@ export const CheckboxText = style({
       fontSize: vars.fonts.m_body1,
     },
   },
+});
+
+export const AdminAuthContainer = style({
+  display: 'flex',
+  gap: '10px',
+  justifyContent: 'flex-end',
 });

@@ -119,7 +119,7 @@ export const SideMenu = style({
   borderTopLeftRadius: '8px',
   borderBottomLeftRadius: '8px',
   right: '0',
-  width: '50%',
+  width: '55%',
   height: '100vh',
   backgroundColor: vars.colors.surface.bright,
   display: 'flex',
@@ -178,7 +178,7 @@ export const ButtonStyle2 = style({
   marginRight: '30px',
 
   '@media': {
-    [`screen and (max-width: ${BREAKPOINTS.desktop}px)`]: {
+    [`screen and (max-width: 1080px)`]: {
       marginRight: '20px',
     },
     [`screen and (max-width: ${BREAKPOINTS.tablet}px)`]: {

@@ -8,6 +8,7 @@ import Button from '@/common/ui/button/index';
 import { loginSchema, LoginForm } from '@/components/login/schema';
 import { ROUTES } from '@/common/constants/routes';
 import { postLogin } from '@/components/login/api';
+import { initializeAndSendFCMToken } from '@/fcm/fcmToken';
 
 export default function Page() {
   const router = useRouter();
@@ -32,6 +33,11 @@ export default function Page() {
       };
       const response = await postLogin(loginData);
       if (response.success) {
+        // 로그인 성공 후 FCM 토큰 초기화 및 전달
+        // 백그라운드에서 처리되므로 await하지 않아도 됩니다
+        initializeAndSendFCMToken().catch((error) => {
+          console.error('FCM 토큰 초기화 실패:', error);
+        });
         router.push('/');
       }
     } catch (error: unknown) {
@@ -45,22 +51,28 @@ export default function Page() {
     <div className={S.Container}>
       <div className={S.LoginText}>로그인</div>
       <form className={S.BoxContainer} onSubmit={handleSubmit(onSubmit)}>
-        <div className={S.AuthText({ password: false })}>학번</div>
+        <label htmlFor="studentId" className={S.AuthText({ password: false })}>
+          학번
+        </label>
         <input
           type="text"
           className={S.userInput}
           {...register('studentId')}
           placeholder="학번을 입력하세요"
           maxLength={9}
+          id="studentId"
         />
         {errors.studentId && <p className={S.ErrorText}>{errors.studentId.message}</p>}
 
-        <div className={S.AuthText({ password: true })}>비밀번호</div>
+        <label htmlFor="password" className={S.AuthText({ password: true })}>
+          비밀번호
+        </label>
         <input
           type="password"
           className={S.userInput}
           {...register('password')}
           placeholder="비밀번호를 입력하세요"
+          id="password"
         />
         {errors.password && <p className={S.ErrorText}>{errors.password.message}</p>}
 

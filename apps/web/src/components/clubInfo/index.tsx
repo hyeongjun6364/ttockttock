@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import * as S from '@/components/clubInfo/index.css';
 import BackButton from '@/components/clubInfo/BackButton';
 import ClubProfile from '@/components/clubInfo/ClubProfile';
@@ -11,12 +12,16 @@ import { useClubInfo } from '@/hooks/useClubInfo';
 import LoadingSpinner from '@/common/ui/loading';
 import { useModal } from '@/hooks/useModal';
 import ConfirmModal from '@/common/components/confirmModal';
+import { useScrollTop } from '@/hooks/useScrollTop';
 
-export default function ClubInfoPage() {
+const ClubInfoPage = () => {
   const { clubId } = useParams();
   const { data } = useClubInfo(clubId as string);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const { isOpen, handleModalClose, handleModalOpen } = useModal();
+
+  useScrollTop();
+
   useEffect(() => {
     const checkScreenSize = () => {
       setIsLargeScreen(window.innerWidth >= 1440);
@@ -52,4 +57,6 @@ export default function ClubInfoPage() {
       </ConfirmModal>
     </>
   );
-}
+};
+
+export default dynamic(() => Promise.resolve(ClubInfoPage), { ssr: false });
